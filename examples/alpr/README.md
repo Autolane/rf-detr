@@ -18,6 +18,7 @@ This example demonstrates training RF-DETR for license plate detection and expor
 | `train.py` | Train RF-DETR with W&B/TensorBoard logging |
 | `export_onnx.py` | Export trained model to ONNX |
 | `calibrate_int8.py` | Build TensorRT INT8 engine with calibration |
+| `test_inference.py` | Test detection + OCR on sample images |
 
 ## Quick Start
 
@@ -68,6 +69,18 @@ trtexec \
 python calibrate_int8.py
 ```
 
+### 6. Test Inference with OCR
+
+```bash
+# Install OCR dependency
+pip install fast-plate-ocr[onnx-gpu]
+
+# Run detection + OCR on sample images
+python test_inference.py
+```
+
+Output images with bounding boxes and plate numbers will be saved to `./test_output/`.
+
 ## Pre-trained Models
 
 Pre-trained models are available on HuggingFace:
@@ -87,5 +100,5 @@ See: https://huggingface.co/autolane/rfdetr-alpr
 ## Requirements
 
 ```bash
-pip install rfdetr tensorrt pycuda onnx onnx-simplifier
+pip install rfdetr tensorrt pycuda onnx onnx-simplifier fast-plate-ocr[onnx-gpu]
 ```
