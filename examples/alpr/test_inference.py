@@ -15,7 +15,7 @@ import torch
 from PIL import Image
 
 from rfdetr import RFDETRMedium
-from fast_plate_ocr import ONNXPlateRecognizer
+from fast_plate_ocr import LicensePlateRecognizer
 
 # =============================================================================
 # CONFIGURATION
@@ -42,9 +42,11 @@ detector = RFDETRMedium(
     pretrain_weights=CHECKPOINT_PATH
 )
 
-# Load OCR model
-print("Loading OCR model (global-plates-mobile-vit-v2-model)...")
-ocr = ONNXPlateRecognizer('global-plates-mobile-vit-v2-model')
+# Load OCR model (CCT for better accuracy on US plates)
+# Options: 'cct-xs-v1-global-model' (faster), 'cct-s-v1-global-model' (more accurate)
+OCR_MODEL = 'cct-xs-v1-global-model'
+print(f"Loading OCR model ({OCR_MODEL})...")
+ocr = LicensePlateRecognizer(hub_ocr_model=OCR_MODEL, device='auto')
 
 # Get image files
 image_files = [
@@ -131,13 +133,19 @@ for idx, image_file in enumerate(selected_images):
             # Crop plate region
             plate_crop = image_cv[y1:y2, x1:x2]
 
-            # Run OCR
+            # Run OCR with preprocessing
             try:
-                # Convert to grayscale for OCR (standard for plate recognition)
-                plate_gray = cv2.cvtColor(plate_crop, cv2.COLOR_BGR2GRAY)
+                # Convert BGR to RGB for the model
+                plate_rgb = cv2.cvtColor(plate_crop, cv2.COLOR_BGR2RGB)
 
-                # Run OCR
-                plate_text = ocr.run(plate_gray)
+                # Apply CLAHE for contrast enhancement (on each channel)
+                clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+                lab = cv2.cvtColor(plate_crop, cv2.COLOR_BGR2LAB)
+                lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+                plate_enhanced = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+                # Run OCR (model handles resize/color conversion internally)
+                plate_text = ocr.run(plate_enhanced)
                 if isinstance(plate_text, list):
                     plate_text = plate_text[0] if plate_text else "N/A"
                 plate_text = str(plate_text).strip().rstrip('_')
