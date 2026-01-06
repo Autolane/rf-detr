@@ -72,12 +72,14 @@ python calibrate_int8.py
 ### 6. Test Inference with OCR
 
 ```bash
-# Install OCR dependency
-pip install fast-plate-ocr[onnx-gpu]
+# Install OCR dependency (requires v1.0.0+)
+pip install "fast-plate-ocr[onnx-gpu]>=1.0.0"
 
 # Run detection + OCR on sample images
 python test_inference.py
 ```
+
+The test script uses the CCT (Compact Convolutional Transformer) model for OCR, which provides good accuracy on global license plates. CLAHE preprocessing is applied for contrast enhancement.
 
 Output images with bounding boxes and plate numbers will be saved to `./test_output/`.
 
@@ -100,5 +102,5 @@ See: https://huggingface.co/autolane/rfdetr-alpr
 ## Requirements
 
 ```bash
-pip install rfdetr tensorrt pycuda onnx onnx-simplifier fast-plate-ocr[onnx-gpu]
+pip install rfdetr tensorrt pycuda onnx onnx-simplifier "fast-plate-ocr[onnx-gpu]>=1.0.0"
 ```
