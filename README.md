@@ -176,6 +176,59 @@ You can fine-tune an RF-DETR Nano, Small, Medium, and Base model with a custom d
 
 [Learn how to train an RF-DETR model.](https://rfdetr.roboflow.com/learn/train/)
 
+### ONNX Export
+
+This fork includes fixes for ONNX export compatibility. To export a trained model to ONNX format:
+
+```python
+import torch
+import os
+
+torch._dynamo.config.suppress_errors = True
+
+from rfdetr import RFDETRMedium
+
+CHECKPOINT_PATH = "./output/license_plate_detector/checkpoint_best_ema.pth"
+OUTPUT_DIR = "./export"
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# Load model
+model = RFDETRMedium(
+    resolution=576,
+    num_classes=1,
+    pretrain_weights=CHECKPOINT_PATH
+)
+
+# Get inner model
+inner_model = model.model.model.cuda()
+inner_model.eval()
+inner_model.export = True
+
+# Dummy input
+dummy_input = torch.randn(1, 3, 576, 576, device='cuda')
+
+torch.onnx.export(
+    inner_model,
+    dummy_input,
+    f"{OUTPUT_DIR}/rfdetr.onnx",
+    opset_version=18,
+    input_names=["images"],
+    output_names=["boxes", "scores"],
+    dynamic_axes={
+        "images": {0: "batch"},
+        "boxes": {0: "batch"},
+        "scores": {0: "batch"}
+    },
+    do_constant_folding=True,
+    export_params=True,
+    dynamo=False,
+)
+```
+
+**Note:** This fork includes the following fixes for ONNX export:
+- Disabled `antialias=True` in bicubic interpolation (unsupported by ONNX exporter)
+- Fixed dynamic shape issue in LayerNorm by using static `normalized_shape`
+
 ## Documentation
 
 Visit our [documentation website](https://rfdetr.roboflow.com) to learn more about how to use RF-DETR.
