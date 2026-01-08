@@ -11,6 +11,28 @@
 [![roboflow](https://raw.githubusercontent.com/roboflow-ai/notebooks/main/assets/badges/roboflow-blogpost.svg)](https://blog.roboflow.com/rf-detr)
 [![discord](https://img.shields.io/discord/1159501506232451173?logo=discord&label=discord&labelColor=fff&color=5865f2&link=https%3A%2F%2Fdiscord.gg%2FGbfgXGJ8Bk)](https://discord.gg/GbfgXGJ8Bk)
 
+---
+
+## Fork Notice
+
+**This is a fork of [roboflow/rf-detr](https://github.com/roboflow/rf-detr) with the following changes:**
+
+### ONNX Export Fixes
+- Disabled `antialias=True` in bicubic interpolation (unsupported by ONNX opset 18)
+- Fixed dynamic shape issue in LayerNorm by using static `normalized_shape`
+
+These fixes enable exporting RF-DETR models to ONNX for TensorRT and edge deployment.
+
+### ALPR Example Pipeline
+Complete Automatic License Plate Recognition pipeline in [`examples/alpr/`](examples/alpr/):
+- Dataset preparation (COCO format merging)
+- Training with W&B/TensorBoard logging
+- ONNX export and TensorRT INT8 calibration
+- Inference with OCR integration (fast-plate-ocr)
+
+Pre-trained ALPR models available on HuggingFace: [autolane/rfdetr-alpr](https://huggingface.co/autolane/rfdetr-alpr)
+
+---
 
 RF-DETR is a real-time, transformer-based object detection and instance segmentation model architecture developed by Roboflow and released under the Apache 2.0 license.
 
@@ -178,7 +200,7 @@ You can fine-tune an RF-DETR Nano, Small, Medium, and Base model with a custom d
 
 ### ONNX Export
 
-This fork includes fixes for ONNX export compatibility. To export a trained model to ONNX format:
+To export a trained model to ONNX format (see [Fork Notice](#fork-notice) for fixes included):
 
 ```python
 import torch
@@ -225,9 +247,7 @@ torch.onnx.export(
 )
 ```
 
-**Note:** This fork includes the following fixes for ONNX export:
-- Disabled `antialias=True` in bicubic interpolation (unsupported by ONNX exporter)
-- Fixed dynamic shape issue in LayerNorm by using static `normalized_shape`
+For a complete export and deployment pipeline, see [`examples/alpr/`](examples/alpr/).
 
 ## Documentation
 
