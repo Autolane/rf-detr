@@ -1,6 +1,23 @@
 # ALPR (Automatic License Plate Recognition) Example
 
-This example demonstrates training RF-DETR for license plate detection and exporting to TensorRT for edge deployment.
+This example demonstrates training RF-DETR for license plate detection and exporting for deployment.
+
+## Deployment Targets
+
+This pipeline supports multiple deployment paths depending on your target hardware:
+
+| Target | Runtime | Model Format | Notes |
+|--------|---------|--------------|-------|
+| NVIDIA GPU | TensorRT | `.engine` (FP16/INT8) | Fastest inference, requires CUDA |
+| i.MX8M Plus | TFLite + NPU delegate | `.tflite` (INT8) | Vivante VIP8000 NPU |
+| i.MX93 | TFLite + Ethos delegate | `.tflite` (INT8) | Ethos-U65 NPU |
+| Generic ARM | ONNX Runtime / TFLite | `.onnx` / `.tflite` | CPU fallback |
+
+**GPU path (this repo):** PyTorch checkpoint -> ONNX -> TensorRT engine
+
+**Edge NPU path:** PyTorch checkpoint -> ONNX -> TFLite INT8 (with representative dataset calibration)
+
+For edge deployment on ARM + NPU devices, use TFLite with INT8 quantization. TensorRT engines are GPU-specific and won't run on ARM NPUs.
 
 ## Pipeline Overview
 
@@ -8,7 +25,7 @@ This example demonstrates training RF-DETR for license plate detection and expor
 2. **Train Model** - Fine-tune RF-DETR Medium
 3. **Export ONNX** - Convert to ONNX format
 4. **Optimize ONNX** - Simplify graph (optional)
-5. **Build TensorRT** - Create FP16/INT8 engines
+5. **Build TensorRT** - Create FP16/INT8 engines (GPU) -or- Convert to TFLite INT8 (Edge NPU)
 
 ## Scripts
 
@@ -17,7 +34,8 @@ This example demonstrates training RF-DETR for license plate detection and expor
 | `prepare_dataset.py` | Merge multiple COCO datasets into one |
 | `train.py` | Train RF-DETR with W&B/TensorBoard logging |
 | `export_onnx.py` | Export trained model to ONNX |
-| `calibrate_int8.py` | Build TensorRT INT8 engine with calibration |
+| `calibrate_int8.py` | Build TensorRT INT8 engine with calibration (GPU) |
+| `convert_tflite.py` | Convert ONNX to TFLite INT8 (Edge NPU) |
 | `test_inference.py` | Test detection + OCR on sample images |
 
 ## Quick Start
@@ -68,6 +86,21 @@ trtexec \
 # Requires calibration images in ./merged_dataset/valid/
 python calibrate_int8.py
 ```
+
+### 5b. Convert to TFLite INT8 (Edge NPU)
+
+For ARM + NPU deployment (i.MX93, i.MX8M Plus), convert to TFLite INT8 instead of TensorRT:
+
+```bash
+# Convert ONNX to TFLite with INT8 quantization
+python convert_tflite.py
+```
+
+This uses a representative dataset for calibration to ensure accurate INT8 quantization. The output `.tflite` model can be deployed with:
+- **i.MX8M Plus**: TFLite with Vivante NPU delegate
+- **i.MX93**: TFLite with Ethos-U delegate via [eIQ](https://www.nxp.com/design/software/development-software/eiq-ml-development-environment:EIQ)
+
+Note: Transformer-based models like RF-DETR may have limited NPU operator coverage. Profile on target hardware and expect some CPU fallback for unsupported ops.
 
 ### 6. Test Inference with OCR
 
